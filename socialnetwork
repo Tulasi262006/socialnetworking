@@ -1,0 +1,156 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX 10     // maximum number of people
+#define NAME_LEN 20  // maximum name length
+
+int friends[MAX][MAX];  // undirected graph (friendship)
+int follows[MAX][MAX];  // directed graph (followers)
+int visited[MAX];
+int n;  // number of people
+
+char names[MAX][NAME_LEN];  // store person names
+
+int findIndex(char name[]) {
+    for (int i = 0; i < n; i++) {
+        if (strcmp(names[i], name) == 0)
+            return i;
+    }
+    return -1;
+}
+
+// DFS for friendship graph
+void DFS(int start) {
+    printf("%s ", names[start]);
+    visited[start] = 1;
+    for (int i = 0; i < n; i++) {
+        if (friends[start][i] == 1 && visited[i] == 0)
+            DFS(i);
+    }
+}
+
+// BFS for followers graph
+void BFS(int start) {
+    int queue[MAX], front = 0, rear = 0;
+    for (int i = 0; i < n; i++) visited[i] = 0;
+
+    visited[start] = 1;
+    queue[rear++] = start;
+
+    printf("%s ", names[start]);
+
+    while (front < rear) {
+        int node = queue[front++];
+        for (int i = 0; i < n; i++) {
+            if (follows[node][i] == 1 && visited[i] == 0) {
+                printf("%s ", names[i]);
+                visited[i] = 1;
+                queue[rear++] = i;
+            }
+        }
+    }
+}
+
+void findInfluencer() {
+    int indegree[MAX] = {0};
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            if (follows[j][i] == 1)
+                indegree[i]++;
+
+    int max = 0, person = -1;
+    for (int i = 0; i < n; i++) {
+        if (indegree[i] > max) {
+            max = indegree[i];
+            person = i;
+        }
+    }
+
+    if (person != -1)
+        printf("\nMost followed person (influencer): %s with %d followers\n", names[person], max);
+    else
+        printf("\nNo influencer found.\n");
+}
+
+int main() {
+    printf("Enter number of people: ");
+    scanf("%d", &n);
+
+    // Input person names
+    printf("\nEnter the names of %d people:\n", n);
+    for (int i = 0; i < n; i++) {
+        scanf("%s", names[i]);
+    }
+
+    // Initialize matrices
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++) {
+            friends[i][j] = 0;
+            follows[i][j] = 0;
+        }
+
+    int e;
+    char a[NAME_LEN], b[NAME_LEN];
+    printf("\nEnter number of friendships (undirected): ");
+    scanf("%d", &e);
+    printf("Enter friendships (name1 name2):\n");
+    for (int i = 0; i < e; i++) {
+        scanf("%s %s", a, b);
+        int p1 = findIndex(a);
+        int p2 = findIndex(b);
+        if (p1 != -1 && p2 != -1)
+            friends[p1][p2] = friends[p2][p1] = 1;
+    }
+
+    printf("\nEnter number of follow relations (directed): ");
+    scanf("%d", &e);
+    printf("Enter follow pairs (name1 name2) means name1 follows name2:\n");
+    for (int i = 0; i < e; i++) {
+        scanf("%s %s", a, b);
+        int p1 = findIndex(a);
+        int p2 = findIndex(b);
+        if (p1 != -1 && p2 != -1)
+            follows[p1][p2] = 1;
+    }
+
+    // Print matrices (optional for debugging)
+    printf("\nFriendship Matrix:\n");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++)
+            printf("%d ", friends[i][j]);
+        printf("\n");
+    }
+
+    printf("\nFollower Matrix:\n");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++)
+            printf("%d ", follows[i][j]);
+        printf("\n");
+    }
+
+    // Choose starting person
+    char startName[NAME_LEN];
+    printf("\nEnter the name to start DFS and BFS traversals: ");
+    scanf("%s", startName);
+    int startPerson = findIndex(startName);
+
+    if (startPerson == -1) {
+        printf("Person not found.\n");
+        return 0;
+    }
+
+    // DFS
+    for (int i = 0; i < n; i++) visited[i] = 0;
+    printf("\nDFS traversal of friendships (starting from %s): ", startName);
+    DFS(startPerson);
+
+    // BFS
+    printf("\nBFS traversal of followers (starting from %s): ", startName);
+    BFS(startPerson);
+
+    // Influencer
+    findInfluencer();
+
+    return 0;
+}
